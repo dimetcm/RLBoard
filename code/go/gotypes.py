@@ -1,4 +1,6 @@
 import enum
+import copy
+
 from collections import namedtuple
 
 class Player(enum.Enum):
@@ -61,3 +63,39 @@ class Move():
     def __eq__(self, other):
         return (self.is_play, self.is_pass, self.is_resign, self.point) ==\
                (other.is_play, other.is_pass, other.is_resign, other.point)
+
+class GoString:
+    def __init__(self, color, stones, liberties):
+        self.color = color
+        self.stones = frozenset(stones)
+        self.liberties = frozenset(liberties)
+
+    def without_liberty(self, point):
+        new_liberties = self.liberties - set([point])
+        return GoString(self.color, self.stones, new_liberties)
+
+    def with_liberty(self, point):
+        new_liberties = self.liberties | set([point])
+        return GoString(self.color, self.stones, new_liberties)
+
+    def merged_with(self, string):
+        """Return a new string containing all stones in both strings."""
+        assert string.color == self.color
+        combined_stones = self.stones | string.stones
+        return GoString(
+            self.color,
+            combined_stones,
+            (self.liberties | string.liberties) - combined_stones)
+
+    @property
+    def num_liberties(self):
+        return len(self.liberties)
+
+    def __eq__(self, other):
+        return isinstance(other, GoString) and \
+            self.color == other.color and \
+            self.stones == other.stones and \
+            self.liberties == other.liberties
+
+    def __deepcopy__(self, memodict={}):
+        return GoString(self.color, self.stones, copy.deepcopy(self.liberties))
