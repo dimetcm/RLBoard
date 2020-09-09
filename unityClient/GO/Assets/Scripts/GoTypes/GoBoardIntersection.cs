@@ -4,15 +4,10 @@ using UnityEngine;
 
 public class GoBoardIntersection : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    void OnMouseDown()
     {
         
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        GoGame.Instance.OnClicked(this);
     }
 }
