@@ -17,7 +17,7 @@ public class GoBoardVisual : MonoBehaviour
     [SerializeField]
     GameObject m_intersectionsContainer = null;
 
-        for (int i = 0; i < m_boardLogic.Size + 1; ++i)
+    [SerializeField]
     GameObject m_whitePlayerStonePrefab = null;
     [SerializeField]
     GameObject m_blackPlayerStonePrefab = null;

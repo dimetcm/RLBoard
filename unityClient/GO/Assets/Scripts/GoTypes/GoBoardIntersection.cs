@@ -6,8 +6,6 @@ public class GoBoardIntersection : MonoBehaviour
 {
     void OnMouseDown()
     {
-        
-    }
         GoGame.Instance.OnClicked(this);
     }
 }
