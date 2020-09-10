@@ -1,18 +1,19 @@
 ﻿using System.Collections;
+using System;
 using System.Collections.Generic;
-using UnityEngine;
-
-public class GoStone : MonoBehaviour
+public class GoStone : IEquatable<GoStone>
 {
-    // Start is called before the first frame update
-    void Start()
+    private int m_x;
+    private int m_y;
+
+    public GoStone(int x, int y)
     {
-        
+        m_x = x;
+        m_y = y;
     }
 
-    // Update is called once per frame
-    void Update()
+    public bool Equals(GoStone other)
     {
-        
+        return m_x == other.m_x && m_y == other.m_y;
     }
 }

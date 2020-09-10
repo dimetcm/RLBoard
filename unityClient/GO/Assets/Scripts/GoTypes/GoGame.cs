@@ -14,13 +14,16 @@ public class GoGame : MonoBehaviour
 
     private static GoGame m_instance = null;
 
-    public enum PlayerColor
+    private List<GoStone> m_whiteStones = new List<GoStone>();
+    private List<GoStone> m_blackStones = new List<GoStone>();
+
+    public enum StoneColor
     {
         White,
         Black
     }
 
-    private PlayerColor m_currentPlayerColor = PlayerColor.White;
+    private StoneColor m_currentPlayerColor = StoneColor.White;
     public static GoGame Instance
     {
         get 
@@ -55,7 +58,20 @@ public class GoGame : MonoBehaviour
 
     public void OnClicked(GoBoardIntersection intersection)
     {
-        m_boardVisual.PlaceStone(intersection, m_currentPlayerColor);
-        m_currentPlayerColor = m_currentPlayerColor == PlayerColor.White ? PlayerColor.Black : PlayerColor.White;
+        GoStone stone = new GoStone(intersection.X, intersection.Y);
+        if  (!m_whiteStones.Contains(stone) && !m_blackStones.Contains(stone))
+        {
+            if (m_currentPlayerColor == StoneColor.White)
+            {
+                m_whiteStones.Add(stone);
+            }
+            else
+            {
+                m_blackStones.Add(stone);
+            }
+            m_boardVisual.PlaceStone(intersection, m_currentPlayerColor);
+            m_currentPlayerColor = m_currentPlayerColor == StoneColor.White ? StoneColor.Black : StoneColor.White;
+        }
+
     }
 }

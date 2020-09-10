@@ -49,15 +49,16 @@ public class GoBoardVisual : MonoBehaviour
             for (int j = 0; j < boardSize + 1; ++j)
             {
                 var intersection = Instantiate(m_intersectionPrefab, m_intersectionsContainer.transform, false);
+                intersection.GetComponent<GoBoardIntersection>().Init(i, boardSize - j);
                 intersection.transform.localPosition = new Vector3(i * step - boardOffset, 0.0f, j * step - boardOffset);
             }
         }
 
     }
 
-    public void PlaceStone(GoBoardIntersection intersection, GoGame.PlayerColor playerColor)
+    public void PlaceStone(GoBoardIntersection intersection, GoGame.StoneColor playerColor)
     {
-        GameObject stonePrefab = playerColor == GoGame.PlayerColor.White ? m_whitePlayerStonePrefab : m_blackPlayerStonePrefab;
+        GameObject stonePrefab = playerColor == GoGame.StoneColor.White ? m_whitePlayerStonePrefab : m_blackPlayerStonePrefab;
         Instantiate(stonePrefab, intersection.transform.position, intersection.transform.rotation, m_stonesContainer.transform);
 
     }
