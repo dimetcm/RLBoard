@@ -45,17 +45,24 @@ class Board:
         self.game_state = GameState.create_starting_game_state()
         self.moves_history = []
 
-        # todo: add is_valid(game_state)
+        while True:
+            legal_moves = self.game_state.get_possible_moves(self)
+            if len(legal_moves) == 0:
+                if self.game_state.is_king_under_attack(self.game_state.side_to_move.other):
+                    print("mate, " + ("white" if self.game_state.side_to_move == Side.black else "black") + " won")
+                else:
+                    print("stalemate, " + str(self.game_state.side_to_move) + " to move")
+                return
 
-        while not self.game_state.game_is_over():
-            new_game_state, move = self.__make_move__()
+            new_game_state, move = random.choice(legal_moves)
+
             self.game_state = new_game_state
             self.moves_history.append(move)
             self.print()
 
-    def __make_move__(self):
-        legal_moves = self.game_state.get_possible_moves(self)
-        return random.choice(legal_moves)
+            if self.game_state.is_it_draw():
+                print("draw")
+                return
 
 
 
@@ -100,9 +107,6 @@ class GameState:
 
         return state
 
-    def game_is_over(self):
-        return False
-
     def is_square_under_attack(self, attacker_side, rank_idx, file_idx):
         for i in range(8):
             for j in range(8):
@@ -115,14 +119,31 @@ class GameState:
         return False
 
     def is_valid(self):
-        king_rank_idx = -1
-        king_file_idx = -1
+        return not self.is_king_under_attack(self.side_to_move)
 
+    def is_it_draw(self):
+
+        # insufficient material check
+
+        # todo: for now only two kings check
+        piece_counter = 0
         for i in range(8):
             for j in range(8):
                 piece = self.grid[i][j]
-                if piece and piece.side == self.side_to_move.other and piece.get_piece_type() == PieceType.king:
-                    return not self.is_square_under_attack(self.side_to_move, i, j)
+                if piece:
+                    piece_counter += 1
+
+                if piece_counter > 2:
+                    return False
+
+        return True
+
+    def is_king_under_attack(self, attacker_side):
+        for i in range(8):
+            for j in range(8):
+                piece = self.grid[i][j]
+                if piece and piece.side == attacker_side.other and piece.get_piece_type() == PieceType.king:
+                    return self.is_square_under_attack(attacker_side, i, j)
 
         return False
 
@@ -344,18 +365,20 @@ class Rook(Piece):
     def is_attacking_square(cls, side, game_state, self_rank_idx, self_file_idx, square_rank_idx, square_file_idx):
         if self_rank_idx == square_rank_idx:
             direction = 1 if square_file_idx > self_file_idx else -1
-            for new_file_idx in range(self_file_idx + direction, square_file_idx + direction, direction):
+            for new_file_idx in range(self_file_idx + direction, square_file_idx, direction):
                 piece = game_state.grid[self_rank_idx][new_file_idx]
-                if piece and piece.side == side:
+                if piece:
                     return False
+
             return True
 
         if self_file_idx == square_file_idx:
             direction = 1 if square_rank_idx > self_rank_idx else -1
-            for new_rank_idx in range(self_rank_idx + direction, square_rank_idx + direction, direction):
+            for new_rank_idx in range(self_rank_idx + direction, square_rank_idx, direction):
                 piece = game_state.grid[new_rank_idx][self_file_idx]
-                if piece and piece.side == side:
+                if piece:
                     return False
+
             return True
 
         return False
@@ -375,8 +398,6 @@ class Knight(Piece):
     @classmethod
     def get_possible_moves(cls, game, rank_idx, file_idx):
         game_state = game.game_state
-
-        #todo: check that move doesn't expose king for a check
 
         new_positions = [(rank_idx + 2, file_idx - 1),
                          (rank_idx + 2, file_idx + 1),
@@ -473,10 +494,10 @@ class Bishop(Piece):
         if abs(square_rank_idx - self_rank_idx) != abs(square_file_idx - self_file_idx):
             return False
 
-        for i in range(abs(square_rank_idx - self_rank_idx)):
+        for i in range(abs(square_rank_idx - self_rank_idx) - 1):
             new_position = (self_rank_idx + rank_direction * (i + 1), self_file_idx + file_direction * (i + 1))
             piece = game_state.grid[new_position[0]][new_position[1]]
-            if piece and piece.side == side:
+            if piece:
                 return False
 
         return True
@@ -711,4 +732,3 @@ class King(Piece):
 
 board = Board()
 board.play_game()
-board.print()
