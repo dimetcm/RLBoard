@@ -1,7 +1,7 @@
 import enum
 import random
 import copy
-
+from chessagents import RandomBot, DepthPruningBot
 
 class Side(enum.Enum):
     white = 0
@@ -45,16 +45,18 @@ class Board:
         self.game_state = GameState.create_starting_game_state()
         self.moves_history = []
 
+        white_agent = RandomBot()
+        black_agent = DepthPruningBot()
         while True:
-            legal_moves = self.game_state.get_possible_moves(self)
-            if len(legal_moves) == 0:
+            current_agent = white_agent if self.game_state.side_to_move == Side.white else black_agent
+            new_game_state, move = current_agent.select_move(self)
+
+            if not move:
                 if self.game_state.is_king_under_attack(self.game_state.side_to_move.other):
                     print("mate, " + ("white" if self.game_state.side_to_move == Side.black else "black") + " won")
                 else:
                     print("stalemate, " + str(self.game_state.side_to_move) + " to move")
                 return
-
-            new_game_state, move = random.choice(legal_moves)
 
             self.game_state = new_game_state
             self.moves_history.append(move)
@@ -76,6 +78,7 @@ class GameState:
         self.h1_rook_moved = False
         self.a8_rook_moved = False
         self.h8_rook_moved = False
+        self.last_move = None
         for i in range(8):
             rank = [None] * 8
             self.grid.append(rank)
@@ -113,7 +116,7 @@ class GameState:
                 piece = self.grid[i][j]
                 if piece and piece.side == attacker_side:
                     if piece.is_attacking_square(attacker_side, self, i, j, rank_idx, file_idx):
-                        print(piece, i, j, rank_idx, file_idx)
+                        #print(piece, i, j, rank_idx, file_idx)
                         return True
 
         return False
@@ -147,13 +150,13 @@ class GameState:
 
         return False
 
-    def get_possible_moves(self, game):
+    def get_possible_moves(self):
         result = []
         for i in range(8):
             for j in range(8):
                 piece = self.grid[i][j]
                 if piece and piece.side == self.side_to_move:
-                    result += piece.get_possible_moves(game, i, j)
+                    result += piece.get_possible_moves(self, i, j)
         return result
 
 
@@ -176,7 +179,7 @@ class Piece:
         self.side = side
 
     @classmethod
-    def get_possible_moves(cls, game, rank_idx, file_idx):
+    def get_possible_moves(cls, game_state, rank_idx, file_idx):
         return []
 
     @classmethod
@@ -197,8 +200,7 @@ class Pawn(Piece):
 
 
     @classmethod
-    def get_possible_moves(cls, game, rank_idx, file_idx):
-        game_state = game.game_state
+    def get_possible_moves(cls, game_state, rank_idx, file_idx):
         result = []
 
         # one rank move/promotion
@@ -276,15 +278,14 @@ class Pawn(Piece):
                     result.append((new_state, move))
 
         # en passant
-        if len(game.moves_history) > 0:
-            last_move = game.moves_history[-1]
-            if last_move.piece_type == PieceType.pawn:
+        if game_state.last_move:
+            if game_state.last_move.piece_type == PieceType.pawn:
                 left_and_right_positions = [(rank_idx, file_idx - 1), (rank_idx, file_idx + 1)]
                 for pos in left_and_right_positions:
                     if game_state.is_board_position_valid(pos[0], pos[1]):
                         if game_state.grid[pos[0]][pos[1]] and game_state.grid[pos[0]][pos[1]].get_piece_type() == PieceType.pawn:
                             move_direction = 1 if game_state.side_to_move == Side.white else -1
-                            if last_move.moved_to == (pos[0], pos[1]) and last_move.moved_from == (pos[0] + move_direction * 2, pos[1]):
+                            if game_state.last_move.moved_to == (pos[0], pos[1]) and game_state.last_move.moved_from == (pos[0] + move_direction * 2, pos[1]):
                                 new_state = copy.deepcopy(game_state)
                                 new_state.grid[pos[0]][pos[1]] = None
                                 new_state.grid[rank_idx][file_idx] = None
@@ -314,9 +315,7 @@ class Rook(Piece):
         return PieceType.rook
 
     @classmethod
-    def get_possible_moves(cls, game, rank_idx, file_idx):
-        game_state = game.game_state
-
+    def get_possible_moves(cls, game_state, rank_idx, file_idx):
         result = []
 
         movement_directions = [(1, 0), (0, 1), (-1, 0), (0, -1)]
@@ -396,9 +395,7 @@ class Knight(Piece):
 
 
     @classmethod
-    def get_possible_moves(cls, game, rank_idx, file_idx):
-        game_state = game.game_state
-
+    def get_possible_moves(cls, game_state, rank_idx, file_idx):
         new_positions = [(rank_idx + 2, file_idx - 1),
                          (rank_idx + 2, file_idx + 1),
                          (rank_idx + 1, file_idx + 2),
@@ -448,9 +445,7 @@ class Bishop(Piece):
         return PieceType.bishop
 
     @classmethod
-    def get_possible_moves(cls, game, rank_idx, file_idx):
-        game_state = game.game_state
-
+    def get_possible_moves(cls, game_state, rank_idx, file_idx):
         result = []
 
         movement_directions = [(1, 1), (1, -1), (-1, -1), (-1, 1)]
@@ -516,9 +511,7 @@ class Queen(Piece):
 
 
     @classmethod
-    def get_possible_moves(cls, game, rank_idx, file_idx):
-        game_state = game.game_state
-
+    def get_possible_moves(cls, game_state, rank_idx, file_idx):
         result = []
 
         movement_directions = [(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (1, -1), (-1, -1), (-1, 1)]
@@ -696,8 +689,7 @@ class King(Piece):
         return result
 
     @classmethod
-    def get_possible_moves(cls, game, rank_idx, file_idx):
-        game_state = game.game_state
+    def get_possible_moves(cls, game_state, rank_idx, file_idx):
         side = game_state.side_to_move
         result = []
         directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
